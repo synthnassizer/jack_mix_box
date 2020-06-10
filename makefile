@@ -2,13 +2,10 @@
 # Makefile for building: jackMixBox
 #############################################################################
 
-glibPath=
-
 EXECUTABLE=jackMixBox
-CC=gcc
 DEFINES=
-CFLAGS+=-Wall -Wextra -Wpedantic -g -O0 
-LDFLAGS+=-lasound -ljack -lm -lglib-2.0
+CFLAGS+=-Wall -Wextra -Wpedantic -g -O2 
+LDFLAGS+=-lasound -ljack -lm -lglib-2.0 -lpcre
 INCLUDES=$(shell pkg-config --cflags glib-2.0)
 SOURCES= \
 	jack_mix_box.c \
@@ -26,13 +23,13 @@ OBJECTS=$(SOURCES:.c=.o)
 
 all: $(SOURCES) $(EXECUTABLE)
 
-log.o: log.c
+log.o: log.c log.h
 	$(CC) -c $(CFLAGS) $(INCLUDES) -o "$@" "$<"
 
-scale.o: scale.c
+scale.o: scale.c scale.h
 	$(CC) -c $(CFLAGS) $(INCLUDES) -o "$@" "$<"
 
-jack_mixer.o: jack_mixer.c
+jack_mixer.o: jack_mixer.c jack_mixer.h scale.h log.h
 	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) -o "$@" "$<"
 
 $(EXECUTABLE): $(OBJECTS)
