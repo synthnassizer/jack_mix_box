@@ -2,12 +2,14 @@
 # Makefile for building: jackMixBox
 #############################################################################
 
+glibPath=
+
 EXECUTABLE=jackMixBox
 CC=gcc
-DEFINES=-DHAVE_JACK_MIDI
+DEFINES=
 CFLAGS+=-Wall -Wextra -Wpedantic -g -O0 
 LDFLAGS+=-lasound -ljack -lm -lglib-2.0
-INCLUDES=-I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I /usr/include/glib-2.0 -I /usr/include 
+INCLUDES=$(shell pkg-config --cflags glib-2.0)
 SOURCES= \
 	jack_mix_box.c \
 	jack_mixer.c \
