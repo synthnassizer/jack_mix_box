@@ -1,5 +1,5 @@
 # jack_mix_box
-a no-gui jack volume client as extracted from jack_mixer project
+a no-gui jack volume client as extracted from jack_mixer project (stripped from any python config hooks)
 
 ## build ##
 just run make
