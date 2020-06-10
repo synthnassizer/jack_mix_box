@@ -39,7 +39,7 @@ usage()
 {
 
 	printf("Usage:\n");
-	printf("\tjack_mix_box [ -n|--name JACK_CLI_NAME ] [ -s|--stereo ] MIDI_CC_1 MIDI_CC_2 ....\n\n");
+	printf("\tjack_mix_box [ -n|--name <jack client name> ] [ -s|--stereo ] [ -v|--volume <initial vol> ] MIDI_CC_1 MIDI_CC_2 ....\n\n");
 }
 
 int
@@ -51,6 +51,7 @@ main(int argc, char *argv[])
 	char *jack_cli_name = NULL;
 	int channel_index;
 	bool bStereo = false;
+	double initialVolume = 0.0f; //in dbFS
 
 	while (1) {
 		int c;
@@ -59,11 +60,12 @@ main(int argc, char *argv[])
 			{"name",  required_argument, 0, 'n'},
 			{"help",  required_argument, 0, 'h'},
 			{"stereo",  required_argument, 0, 's'},
+			{"volume",  required_argument, 0, 'v'},
 			{0, 0, 0, 0}
 		};
 		int option_index = 0;
 
-		c = getopt_long (argc, argv, "shn:", long_options, &option_index);
+		c = getopt_long (argc, argv, "shn:v:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -73,6 +75,9 @@ main(int argc, char *argv[])
 				break;
 			case 's':
 				bStereo = true;
+				break;
+			case 'v':
+				initialVolume = strtod(optarg, NULL);
 				break;
 			case 'h':
 				usage();
@@ -120,7 +125,7 @@ main(int argc, char *argv[])
 		}
 		channel_set_volume_midi_cc(channel, atoi(argv[optind++]));
 		channel_set_midi_scale(channel, scale);
-		channel_volume_write(channel, -70);
+		channel_volume_write(channel, initialVolume);
 	}
 
 	while (true) {
