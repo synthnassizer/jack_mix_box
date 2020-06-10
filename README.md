@@ -5,4 +5,4 @@ a no-gui jack volume client as extracted from jack_mixer project (stripped from 
 just run make
 
 ## dependencies ##
-jack, glib-2.0 , m(ath)
+jack, glib-2.0 , m(ath) , pkg-config
