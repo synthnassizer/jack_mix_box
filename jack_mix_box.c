@@ -32,21 +32,31 @@
 #include <string.h>
 #include <stdbool.h>
 #include <getopt.h>
+#include <signal.h>
 #include "jack_mixer.h"
+
+jack_mixer_t mixer;
 
 void
 usage()
 {
 
 	printf("Usage:\n");
-	printf("\tjack_mix_box [ -n|--name <jack client name> ] [ -s|--stereo ] [ -v|--volume <initial vol> ] MIDI_CC_1 MIDI_CC_2 ....\n\n");
+	printf("\tjack_mix_box [ -n|--name <jack client name> ] [ -s|--stereo ] [ -v|--volume <initial vol> ] MIDI_CC_1 MIDI_CC_2 ...\n");
+	printf("\tsend SIGUSR1 to the process to have the current columes reported per input channel\n\n");
+}
+
+void
+reportVolume(int sig)
+{
+	(void)sig;
+	channels_volumes_read(mixer);
 }
 
 int
 main(int argc, char *argv[])
 {
 	jack_mixer_scale_t scale;
-	jack_mixer_t mixer;
 	jack_mixer_channel_t main_mix_channel;
 	char *jack_cli_name = NULL;
 	int channel_index;
@@ -127,6 +137,8 @@ main(int argc, char *argv[])
 		channel_set_midi_scale(channel, scale);
 		channel_volume_write(channel, initialVolume);
 	}
+
+	signal(SIGUSR1, reportVolume);
 
 	while (true) {
 		sleep(1);
