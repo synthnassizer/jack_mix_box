@@ -3,8 +3,7 @@
 #############################################################################
 
 EXECUTABLE=jackMixBox
-DEFINES=
-CFLAGS+=-Wall -Wextra -Wpedantic -g -O2 
+CFLAGS+=-Wall -Wextra -g -O2
 LDFLAGS+=-lasound -ljack -lm -lglib-2.0 -lpcre
 INCLUDES=$(shell pkg-config --cflags glib-2.0)
 SOURCES= \
@@ -30,7 +29,7 @@ scale.o: scale.c scale.h
 	$(CC) -c $(CFLAGS) $(INCLUDES) -o "$@" "$<"
 
 jack_mixer.o: jack_mixer.c jack_mixer.h scale.h log.h
-	$(CC) -c $(CFLAGS) $(DEFINES) $(INCLUDES) -o "$@" "$<"
+	$(CC) -c $(CFLAGS) $(INCLUDES) -o "$@" "$<"
 
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) -o $@ $(OBJECTS) $(CFLAGS) $(INCLUDES) $(LDFLAGS)

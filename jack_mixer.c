@@ -202,7 +202,7 @@ channel_rename(
     port_name[channel_name_size+1] = 'L';
     port_name[channel_name_size+2] = 0;
 
-    ret = jack_port_set_name(channel_ptr->port_left, port_name);
+    ret = jack_port_rename(channel_ptr->mixer_ptr->jack_client, channel_ptr->port_left, port_name);
     if (ret != 0)
     {
       /* what could we do here? */
@@ -210,7 +210,7 @@ channel_rename(
 
     port_name[channel_name_size+1] = 'R';
 
-    ret = jack_port_set_name(channel_ptr->port_right, port_name);
+    ret = jack_port_rename(channel_ptr->mixer_ptr->jack_client, channel_ptr->port_right, port_name);
     if (ret != 0)
     {
       /* what could we do here? */
@@ -220,7 +220,7 @@ channel_rename(
   }
   else
   {
-    ret = jack_port_set_name(channel_ptr->port_left, name);
+    ret = jack_port_rename(channel_ptr->mixer_ptr->jack_client, channel_ptr->port_left, name);
     if (ret != 0)
     {
       /* what could we do here? */
@@ -809,8 +809,8 @@ calc_channel_frames(
   jack_nframes_t end)
 {
   jack_nframes_t i;
-  jack_default_audio_sample_t frame_left;
-  jack_default_audio_sample_t frame_right;
+  jack_default_audio_sample_t frame_left = 0.0f;
+  jack_default_audio_sample_t frame_right = 0.0f;
   unsigned int steps = channel_ptr->num_volume_transition_steps;
   for (i = start ; i < end ; i++)
   {
@@ -1047,13 +1047,13 @@ process(
       (unsigned int)in_event.buffer[1],
       (unsigned int)in_event.buffer[2]);
 
-    mixer_ptr->last_midi_channel = (unsigned int)in_event.buffer[1];
+    mixer_ptr->last_midi_channel = (int)in_event.buffer[1];
     channel_ptr = mixer_ptr->midi_cc_map[in_event.buffer[1]];
 
     /* if we have mapping for particular CC and MIDI scale is set for corresponding channel */
     if (channel_ptr != NULL && channel_ptr->midi_scale != NULL)
     {
-      if (channel_ptr->midi_cc_balance_index == (unsigned int)in_event.buffer[1])
+      if (channel_ptr->midi_cc_balance_index == (char)in_event.buffer[1])
       {
         byte = in_event.buffer[2];
         if (byte == 0)
@@ -1125,7 +1125,7 @@ process(
       {
         continue;
       }
-      if (channel_ptr->midi_cc_balance_index == (unsigned int)cc_channel_index)
+      if (channel_ptr->midi_cc_balance_index == (int)cc_channel_index)
       {
         continue;
       }
@@ -1162,6 +1162,7 @@ create(
   const char * jack_client_name_ptr,
   bool stereo)
 {
+  (void) stereo;
   int ret;
   struct jack_mixer * mixer_ptr;
   int i;
