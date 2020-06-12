@@ -3,7 +3,7 @@
 #############################################################################
 
 EXECUTABLE=jackMixBox
-CFLAGS+=-Wall -Wextra -g -O2
+CFLAGS+=-Wall -Wextra -g -O0 
 LDFLAGS+=-lasound -ljack -lm -lglib-2.0 -lpcre
 INCLUDES=$(shell pkg-config --cflags glib-2.0)
 SOURCES= \
