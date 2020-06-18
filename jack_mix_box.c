@@ -36,16 +36,27 @@
 #include <unistd.h>
 #include "jack_mixer.h"
 
-jack_mixer_t mixer;
 bool keepRunning = true;
+jack_mixer_t mixer;
 
-void
-usage()
+void usage()
 {
-
 	printf("Usage:\n");
 	printf("\tjack_mix_box [ -n|--name <jack client name> ] [ -s|--stereo ] [ -v|--volume <initial vol> ] MIDI_CC_1 MIDI_CC_2 ...\n");
 	printf("\tsend SIGUSR1 to the process to have the current columes reported per input channel\n\n");
+}
+
+bool generateChannelName(char * channel_name, int channel_index)
+{
+	bool ok = false;
+	
+	channel_name = malloc(15);
+	
+	if (channel_name)
+		if (!(snprintf(channel_name, 15, "Channel %d", channel_index) >= 15))
+			ok = true;
+
+	return ok;
 }
 
 void
@@ -71,8 +82,8 @@ volumeControl(int sig, siginfo_t *si, void *ucontext)
 		int channel_index = (0x7FFF0000 & sval) >> 16;
 		char * channel_name = NULL;
 		
-		if (generateChannelName(channel_name, channel_index) {
-			channels_volumes_write_byName(mixer);
+		if (generateChannelName(channel_name, channel_index)) {
+			channel_volume_write_byName(mixer, channel_name, vol);
 		}
 		if (channel_name) {
 			free(channel_name);
@@ -81,15 +92,13 @@ volumeControl(int sig, siginfo_t *si, void *ucontext)
 	}
 }
 
-void
-triggerShutDown(int sig)
+void triggerShutDown(int sig)
 {
 	(void)sig;
 	keepRunning = false;
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	jack_mixer_scale_t scale;
 	jack_mixer_channel_t main_mix_channel;
@@ -102,7 +111,6 @@ main(int argc, char *argv[])
 		.sa_sigaction = volumeControl ,
 		.sa_flags = SA_SIGINFO
 	};
-	sigaction(SIGUSR1, &sa, NULL);
 
 	while (1) {
 		int c;
@@ -166,7 +174,7 @@ main(int argc, char *argv[])
 
 		channel_index += 1;
 		channel_name = malloc(15);
-		if (!generateChannelName(channel_name, channel_index) {
+		if (!generateChannelName(channel_name, channel_index)) {
 			free(channel_name);
 			abort();
 		}
@@ -181,7 +189,7 @@ main(int argc, char *argv[])
 		free(channel_name);
 	}
 
-	signal(SIGUSR1, reportVolume);
+	sigaction(SIGUSR1, &sa, NULL);
 	signal(SIGTERM, triggerShutDown);
 	signal(SIGHUP, triggerShutDown);
 	signal(SIGINT, triggerShutDown);
@@ -196,17 +204,4 @@ main(int argc, char *argv[])
 	scale_destroy(scale);
 	free(jack_cli_name);
 	return 0;
-}
-
-bool generateChannelName(char * channel_name, int channel_index)
-{
-	bool ok = false;
-	
-	channel_name = malloc(15);
-	
-	if (channel_name)
-		if (!snprintf(channel_name, 15, "Channel %d", channel_index) >= 15)
-			ok = true;
-
-	return ok;
 }

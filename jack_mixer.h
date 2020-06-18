@@ -107,7 +107,7 @@ channel_volume_write(
 
 void
 channel_volume_write_byName(
-  jack_mixer_t mixer_ptr, const char * channelName, double volume)
+  jack_mixer_t mixer_ptr, const char * channelName, double volume);
 
 double
 channel_volume_read(
@@ -115,7 +115,7 @@ channel_volume_read(
 
 void
 channels_volumes_read(
-  jack_mixer_t mixer_ptr, char * report, int maxlen);
+  jack_mixer_t mixer, char * report, int maxlen);
 
 /* balance is from -1.0 (full left) to +1.0 (full right) */
 void
