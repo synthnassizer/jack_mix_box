@@ -36,6 +36,8 @@
 #include <unistd.h>
 #include "jack_mixer.h"
 
+#define MAX_INPUT_CHANNELS (10u)
+
 bool keepRunning = true;
 jack_mixer_t mixer;
 
@@ -46,14 +48,14 @@ void usage()
 	printf("\tsend SIGUSR1 to the process to have the current columes reported per input channel\n\n");
 }
 
-bool generateChannelName(char * channel_name, int channel_index)
+bool generateChannelName(char ** channel_name, int channel_index)
 {
 	bool ok = false;
 	
-	channel_name = malloc(15);
+	*channel_name = malloc(15);
 	
 	if (channel_name)
-		if (!(snprintf(channel_name, 15, "Channel %d", channel_index) >= 15))
+		if (!(snprintf(*channel_name, 15, "Channel %d", channel_index) >= 15))
 			ok = true;
 
 	return ok;
@@ -81,7 +83,7 @@ void volumeControl(int sig, siginfo_t *si, void *ucontext)
 		int channel_index = (0x7FFF0000 & sval) >> 16;
 		char * channel_name = NULL;
 		
-		if (generateChannelName(channel_name, channel_index)) {
+		if (generateChannelName(&channel_name, channel_index)) {
 			channel_volume_write_byName(mixer, channel_name, vol);
 		}
 		if (channel_name) {
@@ -104,7 +106,11 @@ int main(int argc, char *argv[])
 	char *jack_cli_name = NULL;
 	int channel_index;
 	bool bStereo = false;
-	double initialVolume = 0.0f; //in dbFS
+	double initialVolumes[MAX_INPUT_CHANNELS] = { 0.0 };
+	int volumesCounter = 0;
+
+	//init the 1st volume even if it'll be overwritten
+	initialVolumes[0] = -1.0f; //in dbFS
 
 	struct sigaction sa = {
 		.sa_sigaction = volumeControl ,
@@ -135,7 +141,8 @@ int main(int argc, char *argv[])
 				bStereo = true;
 				break;
 			case 'v':
-				initialVolume = strtod(optarg, NULL);
+				initialVolumes[volumesCounter] = strtod(optarg, NULL);
+				volumesCounter++;
 				break;
 			case 'h':
 				usage();
@@ -149,6 +156,12 @@ int main(int argc, char *argv[])
 
 	if (optind == argc) {
 		fprintf(stderr, "You must specify at least one input channel\n");
+		exit(1);
+	}
+
+	if ((volumesCounter != 0) && (volumesCounter != 1) && ((optind + volumesCounter) != argc))
+	{
+		fprintf(stderr, "You must specify 0,1 or exactly the same amount of volumes as midi controlled input channels\n");
 		exit(1);
 	}
 
@@ -167,13 +180,12 @@ int main(int argc, char *argv[])
 	channel_volume_write(main_mix_channel, 0.0);
 
 	channel_index = 0;
-	while (optind < argc) {
+	while ((optind < argc) && (channel_index < volumesCounter)) {
 		char *channel_name;
 		jack_mixer_channel_t channel;
 
 		channel_index += 1;
-		channel_name = malloc(15);
-		if (!generateChannelName(channel_name, channel_index)) {
+		if (!generateChannelName(&channel_name, channel_index)) {
 			free(channel_name);
 			abort();
 		}
@@ -184,7 +196,7 @@ int main(int argc, char *argv[])
 		}
 		channel_set_volume_midi_cc(channel, atoi(argv[optind++]));
 		channel_set_midi_scale(channel, scale);
-		channel_volume_write(channel, initialVolume);
+		channel_volume_write(channel, initialVolumes[channel_index - 1]);
 		free(channel_name);
 	}
 
