@@ -545,7 +545,8 @@ channels_volumes_read(jack_mixer_t mixer_ptr, char * report, int maxlen)
     {
         pChannel = (struct channel *)node_ptr->data;
         double vol = channel_volume_read( (jack_mixer_channel_t)pChannel);
-        snprintf(report, maxlen, "%s : volume is %f dbFS for mixer channel: %s\n", jack_get_client_name(pMixer->jack_client), vol, pChannel->name);
+        snprintf(report, maxlen, "%s : cc=%d vol=%f (dbFS), input ch: %s\n",
+            jack_get_client_name(pMixer->jack_client), pChannel->midi_cc_volume_index, vol, pChannel->name);
         printf("%s\n", report);
     }
 }
