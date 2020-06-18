@@ -59,14 +59,13 @@ bool generateChannelName(char * channel_name, int channel_index)
 	return ok;
 }
 
-void
-volumeControl(int sig, siginfo_t *si, void *ucontext)
+void volumeControl(int sig, siginfo_t *si, void *ucontext)
 {
 	(void)ucontext;
 	(void)sig;
 	printf("got sig %d == %d and value %d\n", sig, si->si_signo, si->si_value.sival_int);
 
-	if (0 < si->si_value.sival_int)
+	if (0 <= si->si_value.sival_int)
 	{
 		char volumes[100] = { 0 };
 		channels_volumes_read(mixer, volumes, 100);
