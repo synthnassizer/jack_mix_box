@@ -507,6 +507,26 @@ channel_volume_write(
   channel_ptr->midi_out_has_events = true;
 }
 
+void
+channel_volume_write_byName(
+  jack_mixer_t mixer_ptr, const char * channelName, double volume)
+{
+    GSList *node_ptr;
+    struct channel *pChannel;
+    struct jack_mixer * pMixer = (struct jack_mixer *)mixer_ptr;
+    int counter = 0;
+
+    for (node_ptr = pMixer->input_channels_list; node_ptr; node_ptr = g_slist_next(node_ptr))
+    {
+        pChannel = (struct channel *)node_ptr->data;
+        if (0 == strcmp(channelName, pChannel->name))
+        {
+            channel_volume_write(pChannel, volume);
+            break;
+        }
+    }
+}
+
 double
 channel_volume_read(
   jack_mixer_channel_t channel)
@@ -516,7 +536,7 @@ channel_volume_read(
 }
 
 void
-channels_volumes_read(jack_mixer_t mixer_ptr)
+channels_volumes_read(jack_mixer_t mixer_ptr, char * report, int maxlen)
 {
     GSList *node_ptr;
     struct channel *pChannel;
@@ -526,7 +546,8 @@ channels_volumes_read(jack_mixer_t mixer_ptr)
     {
         pChannel = (struct channel *)node_ptr->data;
         double vol = channel_volume_read( (jack_mixer_channel_t)pChannel);
-        printf("volume is %f dbFS for mixer channel: %s\n", vol, pChannel->name);
+        snprintf(report, maxlen, "volume is %f dbFS for mixer channel: %s\n", vol, pChannel->name);
+        printf(report);
     }
 }
 

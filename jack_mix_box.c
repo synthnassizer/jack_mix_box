@@ -49,10 +49,36 @@ usage()
 }
 
 void
-reportVolume(int sig)
+volumeControl(int sig, siginfo_t *si, void *ucontext)
 {
+	(void)ucontext;
 	(void)sig;
-	channels_volumes_read(mixer);
+	printf("got sig %d == %d and value %d\n", sig, si->si_signo, si->si_value.sival_int);
+
+	if (0 < si->si_value.sival_int)
+	{
+		char volumes[100] = { 0 };
+		channels_volumes_read(mixer, volumes, 100);
+		//parse output
+		//report to caller
+	}
+	else
+	{
+		int sval = si->si_value.sival_int;
+		//16MSB channels , 16 LSB volume
+		int volInt = 0xFFFF & sval;
+		double vol = ((double)volInt) / 100.0f;
+		int channel_index = (0x7FFF0000 & sval) >> 16;
+		char * channel_name = NULL;
+		
+		if (generateChannelName(channel_name, channel_index) {
+			channels_volumes_write_byName(mixer);
+		}
+		if (channel_name) {
+			free(channel_name);
+			channel_name = NULL;
+		}
+	}
 }
 
 void
@@ -71,6 +97,12 @@ main(int argc, char *argv[])
 	int channel_index;
 	bool bStereo = false;
 	double initialVolume = 0.0f; //in dbFS
+
+	struct sigaction sa = {
+		.sa_sigaction = volumeControl ,
+		.sa_flags = SA_SIGINFO
+	};
+	sigaction(SIGUSR1, &sa, NULL);
 
 	while (1) {
 		int c;
@@ -134,7 +166,7 @@ main(int argc, char *argv[])
 
 		channel_index += 1;
 		channel_name = malloc(15);
-		if (snprintf(channel_name, 15, "Channel %d", channel_index) >= 15) {
+		if (!generateChannelName(channel_name, channel_index) {
 			free(channel_name);
 			abort();
 		}
@@ -164,4 +196,17 @@ main(int argc, char *argv[])
 	scale_destroy(scale);
 	free(jack_cli_name);
 	return 0;
+}
+
+bool generateChannelName(char * channel_name, int channel_index)
+{
+	bool ok = false;
+	
+	channel_name = malloc(15);
+	
+	if (channel_name)
+		if (!snprintf(channel_name, 15, "Channel %d", channel_index) >= 15)
+			ok = true;
+
+	return ok;
 }
