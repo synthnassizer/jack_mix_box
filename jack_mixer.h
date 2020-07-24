@@ -23,22 +23,18 @@
 #ifndef JACK_MIXER_H__DAEB51D8_5861_40F2_92E4_24CA495A384D__INCLUDED
 #define JACK_MIXER_H__DAEB51D8_5861_40F2_92E4_24CA495A384D__INCLUDED
 
-#ifdef SWIG
-%module jack_mixer_c
-%include "typemaps.i"
-%apply double *OUTPUT { double * left_ptr, double * right_ptr, double * mono_ptr };
-%{
 #include <stdbool.h>
-#include "jack_mixer.h"
-%}
-#endif
+#include <jack/jack.h>
 
 #include "scale.h"
 
 typedef void * jack_mixer_t;
+typedef void * jack_mixer_kmeter_t;
 typedef void * jack_mixer_channel_t;
 typedef void * jack_mixer_output_channel_t;
 typedef void * jack_mixer_threshold_t;
+
+enum midi_behavior_mode { Jump_To_Value, Pick_Up };
 
 jack_mixer_t
 create(
@@ -66,11 +62,32 @@ set_last_midi_channel(
   jack_mixer_t mixer,
   int new_channel);
 
+int
+get_midi_behavior_mode(
+  jack_mixer_t mixer);
+
+unsigned int
+set_midi_behavior_mode(
+  jack_mixer_t mixer,
+  enum midi_behavior_mode mode);
+
 jack_mixer_channel_t
 add_channel(
   jack_mixer_t mixer,
   const char * channel_name,
   bool stereo);
+
+void kmeter_init(jack_mixer_kmeter_t km,
+  int sr,
+  int fsize,
+  float hold,
+  float fall);
+
+void kmeter_process(
+  jack_mixer_kmeter_t km,
+  jack_default_audio_sample_t *p,
+  int start,
+  int end);
 
 const char *
 channel_get_name(
@@ -89,6 +106,25 @@ channel_mono_meter_read(
   jack_mixer_channel_t channel,
   double * mono_ptr);
 
+
+/* returned values are in dBFS */
+void
+channel_stereo_kmeter_read(
+  jack_mixer_channel_t channel,
+  double * left_ptr,
+  double * right_ptr,
+  double * left_rms_ptr,
+  double * right_rms_ptr);
+
+/* returned value is in dBFS */
+void
+channel_mono_kmeter_read(
+  jack_mixer_channel_t channel,
+  double * mono_ptr,
+  double * mono_rms_ptr);
+
+
+
 bool
 channel_is_stereo(
   jack_mixer_channel_t channel);
@@ -105,17 +141,12 @@ channel_volume_write(
   jack_mixer_channel_t channel,
   double volume);
 
-void
-channel_volume_write_byName(
-  jack_mixer_t mixer_ptr, const char * channelName, double volume);
-
 double
 channel_volume_read(
   jack_mixer_channel_t channel);
 
 void
-channels_volumes_read(
-  jack_mixer_t mixer, char * report, int maxlen);
+channels_volumes_read(jack_mixer_t mixer_ptr);
 
 /* balance is from -1.0 (full left) to +1.0 (full right) */
 void
@@ -163,8 +194,26 @@ channel_set_solo_midi_cc(
   jack_mixer_channel_t channel,
   int new_cc);
 
+void channel_set_midi_cc_volume_picked_up(jack_mixer_channel_t channel,
+  bool status);
+
+void channel_set_midi_cc_balance_picked_up(jack_mixer_channel_t channel,
+  bool status);
+
 void
-channel_autoset_midi_cc(
+channel_autoset_volume_midi_cc(
+  jack_mixer_channel_t channel);
+
+void
+channel_autoset_balance_midi_cc(
+  jack_mixer_channel_t channel);
+
+void
+channel_autoset_mute_midi_cc(
+  jack_mixer_channel_t channel);
+
+void
+channel_autoset_solo_midi_cc(
   jack_mixer_channel_t channel);
 
 void
@@ -263,5 +312,14 @@ output_channel_set_prefader(
 bool
 output_channel_is_prefader(
   jack_mixer_output_channel_t output_channel);
+
+void output_channel_set_in_prefader(jack_mixer_output_channel_t output_channel,
+  jack_mixer_channel_t input_channel,
+  bool prefader_value);
+
+bool
+output_channel_is_in_prefader(
+  jack_mixer_output_channel_t output_channel,
+  jack_mixer_channel_t channel);
 
 #endif /* #ifndef JACK_MIXER_H__DAEB51D8_5861_40F2_92E4_24CA495A384D__INCLUDED */
